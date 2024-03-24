@@ -9,6 +9,7 @@ import Foundation
 import Firebase
 import FirebaseFirestore
 
+
 let COLLECTION_NAME = "articles"
 let PAGE_LIMIT = 20
 
@@ -36,27 +37,70 @@ class FirebaseBackedMobileAppArticle: ObservableObject {
 
     func createArticle(article: Article) -> String {
         var ref: DocumentReference? = nil
-
-        // addDocument is one of those “odd” methods.
         ref = db.collection(COLLECTION_NAME).addDocument(data: [
             "title": article.title,
-            "date": article.date, // This gets converted into a Firestore Timestamp.
-            "body": article.body
-        ]) { possibleError in
-            if let actualError = possibleError {
-                self.error = actualError
+            "title_lowercase": article.title.lowercased(),
+            "date": article.date,
+            "body": article.body,
+            "game": article.game,
+            "userID": article.userID
+        ]) { error in
+            if let error = error {
+                self.error = error
             }
         }
-
-        // If we don’t get a ref back, return an empty string to indicate “no ID.”
         return ref?.documentID ?? ""
     }
+
+
+
 
     // Note: This is quite unsophisticated! It only gets the first PAGE_LIMIT articles.
     // In a real app, you implement pagination.
     func fetchArticles() async throws -> [Article] {
+        articles = []
         let articleQuery = db.collection(COLLECTION_NAME)
             .order(by: "date", descending: true)
+            .limit(to: PAGE_LIMIT)
+
+        // Fortunately, getDocuments does have an async version.
+        //
+        // Firestore calls query results “snapshots” because they represent a…wait for it…
+        // _snapshot_ of the data at the time that the query was made. (i.e., the content
+        // of the database may change after the query but you won’t see those changes here)
+        let querySnapshot = try await articleQuery.getDocuments()
+
+        return try querySnapshot.documents.map {
+            guard let title = $0.get("title") as? String,
+                  let title_lowercase = $0.get("title_lowercase") as? String,
+                  let dateAsTimestamp = $0.get("date") as? Timestamp,
+                  let body = $0.get("body") as? String,
+                  let game = $0.get("game") as? String,
+                  let userID = $0.get("userID") as? String else { // Ensure userId is retrieved
+                throw ArticleServiceError.mismatchedDocumentError
+            }
+
+            let addArticle = Article(
+                title: title,
+                title_lowercase: title_lowercase,
+                date: dateAsTimestamp.dateValue(),
+                body: body,
+                game: game,
+                userID: userID // Pass userId to Article instance
+            )
+            articles.append(addArticle)
+            return addArticle
+        }
+
+    }
+    
+    //searches article based on query that matches article title
+    //code referencing db (Firestore) taken from Firebase Firestore usage documentation
+    func searchArticles(title: String) async throws -> [Article] {
+        articles = []
+        print(title.lowercased())
+        let articleQuery = db.collection(COLLECTION_NAME)
+            .whereField("title_lowercase", isEqualTo: title.lowercased())
             .limit(to: PAGE_LIMIT)
 
         // Fortunately, getDocuments does have an async version.
@@ -70,21 +114,24 @@ class FirebaseBackedMobileAppArticle: ObservableObject {
             // This is likely new Swift for you: type conversion is conditional, so they
             // must be guarded in case they fail.
             guard let title = $0.get("title") as? String,
-
-                // Firestore returns Swift Dates as its own Timestamp data type.
+                let title_lowercase = $0.get("title_lowercase") as? String,
                 let dateAsTimestamp = $0.get("date") as? Timestamp,
-                let body = $0.get("body") as? String else {
+                let body = $0.get("body") as? String,
+                let game = $0.get("game") as? String,
+                let userID = $0.get("userID") as? String else {
                 throw ArticleServiceError.mismatchedDocumentError
-            }
+                }
 
-            var addArticle = Article(
+            let addArticle = Article(
                 title: title,
+                title_lowercase: title_lowercase,
                 date: dateAsTimestamp.dateValue(),
-                body: body
+                body: body,
+                game: game,
+                userID: userID
             )
             articles.append(addArticle)
             return addArticle
         }
     }
-
 }

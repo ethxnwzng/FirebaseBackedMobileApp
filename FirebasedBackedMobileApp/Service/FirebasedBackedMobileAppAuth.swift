@@ -54,20 +54,75 @@ class FirebaseBackedMobileAppAuth: NSObject, ObservableObject, FUIAuthDelegate {
         // If we get past the logout attempt, we can safely clear the user.
         user = nil
     }
+    
+    var userID: String? {
+            return user?.uid
+    }
+    
+    //userprofile functions
+    func updateUserProfile(userId: String, username: String) {
+        let db = Firestore.firestore()
+        //taken from firebase "data model" and "data types" firestore documentation
+        db.collection("users").document(userId).updateData(["username": username])
+    }
+    
+    
+    func fetchUsername(completion: @escaping (String?) -> Void) {
+            guard let userId = self.userID else {
+                completion(nil)
+                return
+            }
+            
+            fetchUserData(userId: userId) { userData in
+                completion(userData?["username"] as? String)
+            }
+    }
+        
+    
+    func fetchUserData(userId: String, completion: @escaping ([String: Any]?) -> Void) {
+        let db = Firestore.firestore()
+        let userDocRef = db.collection("users").document(userId)
+            
+        userDocRef.getDocument { document, error in
+            guard let document = document, document.exists else {
+                print("No document found for user with ID \(userId)")
+                //send nothing if user was not found
+                completion(nil)
+                return
+            }
+            //send user data
+            completion(document.data())
+        }
+    }
+    
+    func createUserDocument(userId: String, email: String) {
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).setData([
+            "email": email,
+            "username": "No username yet" // Default username
+        ]) { error in
+            if let error = error {
+                print("Error creating user document: \(error.localizedDescription)")
+            } else {
+                print("User document successfully created")
+            }
+        }
+    }
+    
+    
+    func fetchUsernameFromID(userId: String, completion: @escaping (String) -> Void) {
+        let db = Firestore.firestore()
+        db.collection("users").document(userId).getDocument { document, error in
+            if let document = document, document.exists, let username = document.data()?["username"] as? String {
+                completion(username)
+            } else {
+                print("Document does not exist or username is missing")
+                completion("Unknown User")
+            }
+        }
+    }
+
 }
 
-func signInUser(email: String, password: String) {
-    Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-        //error management
-        print("There was an issue")
-    }
-}
+    
 
-func signUpUser(email: String, password: String) {
-    Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
-        //error management
-        print("There was an issue")
-        // Handle successful account creation
-        // For instance, navigate to the sign-in page or directly to the main content of your app
-    }
-}

@@ -30,8 +30,10 @@ struct ArticleMetadata: View {
 #Preview {
     ArticleMetadata(article: Article(
         title: "Preview",
+        title_lowercase: "preview",
         date: Date(),
-        body: "Lorem ipsum dolor sit something something amet"
-        
+        body: "Lorem ipsum dolor sit something something amet",
+        game: "Random",
+        userID: "TEST"
     ))
 }

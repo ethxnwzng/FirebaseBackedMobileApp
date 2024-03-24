@@ -1,40 +1,53 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct ArticleEntry: View {
     @EnvironmentObject var articleService: FirebaseBackedMobileAppArticle
+    @EnvironmentObject var auth: FirebaseBackedMobileAppAuth
     @Binding var writing: Bool
     
     @State private var title = ""
+    @State private var game = ""
     @State private var articleBody = ""
-
+    
     func submitArticle() {
-        let newArticle = Article(
-            title: title,
-            date: Date(),
-            body: articleBody
-        )
+        guard let userID = auth.userID else {
+            print("Error: User is not signed in")
+            return
+        }
         
-        // Call createArticle function to send the article to Firestore.
-        // The articleService is responsible for updating the articles list.
-        articleService.createArticle(article: newArticle)
-
-        // Reset the writing flag to dismiss the ArticleEntry view
+        let newArticle = Article(
+                    title: title,
+                    title_lowercase: title.lowercased(),
+                    date: Date(),
+                    body: articleBody,
+                    game: game,
+                    userID: userID // Include the userId when creating a new article
+                )
+        
+        _ = articleService.createArticle(article: newArticle)
         writing = false
     }
-
+    
     var body: some View {
         NavigationView {
             List {
-                Section(header: Text("Title")) {
-                    TextField("", text: $title)
+                Section(header: Text("Title").foregroundColor(.purple)) {
+                    TextField("Title of your post", text: $title)
                 }
                 
-                Section(header: Text("Body")) {
+                Section(header: Text("Game").foregroundColor(.purple)) {
+                    TextField("Game related to the article", text: $game)
+                }
+                
+                Section(header: Text("Body").foregroundColor(.purple)) {
                     TextEditor(text: $articleBody)
-                        .frame(minHeight: 256, maxHeight: .infinity)
+                        .frame(minHeight: 200, maxHeight: .infinity)
                 }
             }
+            .listStyle(GroupedListStyle())
             .navigationTitle("New Article")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarLeading) {
                     Button("Cancel") {
@@ -49,6 +62,7 @@ struct ArticleEntry: View {
                     .disabled(title.isEmpty || articleBody.isEmpty)
                 }
             }
+            .background(Color.purple.edgesIgnoringSafeArea(.all))
         }
     }
 }
@@ -59,5 +73,6 @@ struct ArticleEntry_Previews: PreviewProvider {
     static var previews: some View {
         ArticleEntry(writing: $writing)
             .environmentObject(FirebaseBackedMobileAppArticle())
+            .environmentObject(FirebaseBackedMobileAppAuth())
     }
 }

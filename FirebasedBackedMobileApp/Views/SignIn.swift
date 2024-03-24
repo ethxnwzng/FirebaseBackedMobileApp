@@ -73,32 +73,28 @@ struct SignInView: View {
     
     //Signs in a user, Auth.auth().signIn()... code taken from Firebase authentification documentation
     func signInUser(email: String, password: String) {
-        Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
-            if let error = error {
-                self.alertMessage = error.localizedDescription
-                self.showingAlert = true
-            } else {
-                // Assuming your FirebaseBackedMobileAppAuth updates the user state accordingly
-                self.auth.user = authResult?.user
-                // User signed in successfully, no need for additional navigation as your HomepageView's body should automatically react to the auth state change
+            Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
+                if let error = error {
+                    self.alertMessage = error.localizedDescription
+                    self.showingAlert = true
+                } else if let user = authResult?.user {
+                    self.auth.user = user
+                }
             }
         }
-    }
-    
-    //Signs up a user, Auth.auth().signIn()... code taken from Firebase authentification documentation
-    func signUpUser(email: String, password: String) {
-        Auth.auth().createUser(withEmail: email, password: password) {  authResult, error in
-            if let error = error {
-                self.alertMessage = error.localizedDescription
-                self.showingAlert = true
-            } else {
-                // User signed up and is automatically signed in
-                // Update auth state accordingly
-                self.auth.user = authResult?.user
-                // As with signInUser, no need for explicit navigation due to reactive auth state handling
+        
+        func signUpUser(email: String, password: String) {
+            Auth.auth().createUser(withEmail: email, password: password) {  authResult, error in
+                if let error = error {
+                    self.alertMessage = error.localizedDescription
+                    self.showingAlert = true
+                } else if let user = authResult?.user {
+                    self.auth.user = user
+                    // Call to create user document in Firestore upon successful sign-up
+                    auth.createUserDocument(userId: user.uid, email: email)
+                }
             }
         }
-    }
     
 }
 #Preview {

@@ -9,10 +9,11 @@ struct ArticleList: View {
                 VStack {
                     Spacer()
                     Text("There are no articles.")
-                        .foregroundColor(.black)
+                        .foregroundColor(.white)
+                        .frame(width: 100000)
                     Spacer()
                 }
-                .background(Color.white)
+                .background(Color.purple.edgesIgnoringSafeArea(.all))
             } else {
                 List(articleService.articles) { article in
                     NavigationLink(destination: ArticleView(article: article)) {
