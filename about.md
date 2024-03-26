@@ -11,3 +11,7 @@ Game field when creating and viewing articles -> since this is a blogging app fo
 Copy of production security policy:
 
 <img width="1249" alt="Screenshot 2024-03-25 at 7 13 06 PM" src="https://github.com/lmu-cmsi2022-spring2024/firebase-backed-team-ethan/assets/143565491/3bad33ab-ea33-4c51-854a-f3c87794d55a">
+
+
+Credits:
+App Image created on: https://icon.kitchen/
