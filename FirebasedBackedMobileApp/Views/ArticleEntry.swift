@@ -1,5 +1,4 @@
 import SwiftUI
-import FirebaseFirestore
 
 struct ArticleEntry: View {
     @EnvironmentObject var articleService: FirebaseBackedMobileAppArticle
@@ -9,60 +8,68 @@ struct ArticleEntry: View {
     @State private var title = ""
     @State private var game = ""
     @State private var articleBody = ""
-    
+    @State private var links = [String]()
+
     func submitArticle() {
         guard let userID = auth.userID else {
-            print("Error: User is not signed in")
+            print("User is not signed in")
             return
         }
         
+        // Process links: Replace empty strings with "None", or if all are empty, use ["None"]
+        let processedLinks = links.isEmpty ? ["None"] : links.map { $0.isEmpty ? "None" : $0 }
+
         let newArticle = Article(
-                    title: title,
-                    title_lowercase: title.lowercased(),
-                    date: Date(),
-                    body: articleBody,
-                    game: game,
-                    userID: userID // Include the userId when creating a new article
-                )
+            title: title,
+            title_lowercase: title.lowercased(),
+            date: Date(),
+            body: articleBody,
+            game: game,
+            userID: userID,
+            links: processedLinks
+        )
         
-        _ = articleService.createArticle(article: newArticle)
-        writing = false
+        articleService.createArticle(article: newArticle)
+        writing = false // Close the ArticleEntry view
     }
-    
+
     var body: some View {
         NavigationView {
-            List {
-                Section(header: Text("Title").foregroundColor(.purple)) {
+            Form {
+                Section(header: Text("Title")) {
                     TextField("Title of your post", text: $title)
                 }
                 
-                Section(header: Text("Game").foregroundColor(.purple)) {
+                Section(header: Text("Game")) {
                     TextField("Game related to the article", text: $game)
                 }
                 
-                Section(header: Text("Body").foregroundColor(.purple)) {
-                    TextEditor(text: $articleBody)
-                        .frame(minHeight: 200, maxHeight: .infinity)
-                }
-            }
-            .listStyle(GroupedListStyle())
-            .navigationTitle("New Article")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItemGroup(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        writing = false
+                Section(header: Text("Links")) {
+                    ForEach($links.indices, id: \.self) { index in
+                        TextField("Link \(index + 1)", text: $links[index])
+                    }
+                    Button(action: {
+                        links.append("") // Add a new empty link field
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.green)
                     }
                 }
                 
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button("Submit") {
-                        submitArticle()
-                    }
-                    .disabled(title.isEmpty || articleBody.isEmpty)
+                Section(header: Text("Body")) {
+                    TextEditor(text: $articleBody)
                 }
             }
-            .background(Color.purple.edgesIgnoringSafeArea(.all))
+            .navigationBarTitle("New Article", displayMode: .inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") { writing = false }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Submit") { submitArticle() }
+                        .disabled(title.isEmpty || articleBody.isEmpty)
+                }
+            }
         }
     }
 }

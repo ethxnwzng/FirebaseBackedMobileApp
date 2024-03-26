@@ -35,25 +35,26 @@ class FirebaseBackedMobileAppArticle: ObservableObject {
     // access this error and it will update if things change.
     @Published var error: Error?
 
-    func createArticle(article: Article) -> String {
+    func createArticle(article: Article) {
         var ref: DocumentReference? = nil
+        // Now including links in the document data
         ref = db.collection(COLLECTION_NAME).addDocument(data: [
             "title": article.title,
             "title_lowercase": article.title.lowercased(),
-            "date": article.date,
+            "date": Timestamp(date: article.date),
             "body": article.body,
             "game": article.game,
-            "userID": article.userID
+            "userID": article.userID,
+            "links": article.links // Include links
         ]) { error in
             if let error = error {
                 self.error = error
+                print("Error adding document: \(error.localizedDescription)")
+            } else {
+                print("Document added with ID: \(ref?.documentID ?? "")")
             }
         }
-        return ref?.documentID ?? ""
     }
-
-
-
 
     // Note: This is quite unsophisticated! It only gets the first PAGE_LIMIT articles.
     // In a real app, you implement pagination.
@@ -71,12 +72,14 @@ class FirebaseBackedMobileAppArticle: ObservableObject {
         let querySnapshot = try await articleQuery.getDocuments()
 
         return try querySnapshot.documents.map {
+            //added initilization statements for the additional fields I included within my articles collection in Firestore
             guard let title = $0.get("title") as? String,
-                  let title_lowercase = $0.get("title_lowercase") as? String,
-                  let dateAsTimestamp = $0.get("date") as? Timestamp,
-                  let body = $0.get("body") as? String,
-                  let game = $0.get("game") as? String,
-                  let userID = $0.get("userID") as? String else { // Ensure userId is retrieved
+                let title_lowercase = $0.get("title_lowercase") as? String,
+                let dateAsTimestamp = $0.get("date") as? Timestamp,
+                let body = $0.get("body") as? String,
+                let game = $0.get("game") as? String,
+                let userID = $0.get("userID") as? String,
+                let links = $0.get("links") as? [String] else { // Ensure userId is retrieved
                 throw ArticleServiceError.mismatchedDocumentError
             }
 
@@ -86,7 +89,8 @@ class FirebaseBackedMobileAppArticle: ObservableObject {
                 date: dateAsTimestamp.dateValue(),
                 body: body,
                 game: game,
-                userID: userID // Pass userId to Article instance
+                userID: userID,
+                links: links 
             )
             articles.append(addArticle)
             return addArticle
@@ -111,24 +115,25 @@ class FirebaseBackedMobileAppArticle: ObservableObject {
         let querySnapshot = try await articleQuery.getDocuments()
 
         return try querySnapshot.documents.map {
-            // This is likely new Swift for you: type conversion is conditional, so they
-            // must be guarded in case they fail.
+            //added initilization statements for the additional fields I included within my articles collection in Firestore
             guard let title = $0.get("title") as? String,
                 let title_lowercase = $0.get("title_lowercase") as? String,
                 let dateAsTimestamp = $0.get("date") as? Timestamp,
                 let body = $0.get("body") as? String,
                 let game = $0.get("game") as? String,
-                let userID = $0.get("userID") as? String else {
+                let userID = $0.get("userID") as? String,
+                let links = $0.get("links") as? [String] else {
                 throw ArticleServiceError.mismatchedDocumentError
-                }
-
+            }
+            
             let addArticle = Article(
                 title: title,
                 title_lowercase: title_lowercase,
                 date: dateAsTimestamp.dateValue(),
                 body: body,
                 game: game,
-                userID: userID
+                userID: userID,
+                links: links
             )
             articles.append(addArticle)
             return addArticle

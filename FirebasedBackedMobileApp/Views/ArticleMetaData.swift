@@ -34,6 +34,7 @@ struct ArticleMetadata: View {
         date: Date(),
         body: "Lorem ipsum dolor sit something something amet",
         game: "Random",
-        userID: "TEST"
+        userID: "TEST",
+        links: []
     ))
 }

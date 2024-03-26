@@ -14,4 +14,5 @@ struct Article: Hashable, Codable, Identifiable {
     var body: String
     var game: String
     var userID: String
+    var links: [String]
 }

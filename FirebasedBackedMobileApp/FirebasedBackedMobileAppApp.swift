@@ -20,11 +20,9 @@ struct FirebaseBackedMobileApp: App {
 
   var body: some Scene {
     WindowGroup {
-      NavigationView {
         HomepageView()
         .environmentObject(FirebaseBackedMobileAppAuth())
         .environmentObject(FirebaseBackedMobileAppArticle())
-      }
     }
   }
 }
