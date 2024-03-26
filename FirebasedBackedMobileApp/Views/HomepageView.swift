@@ -112,7 +112,7 @@ struct HomepageView: View {
                     TextField("Search for articles!", text: $searchText)
                         .textInputAutocapitalization(.none)
                         .padding(7)
-                        .padding(.leading, -7) // Adjust according to your UI needs
+                        .padding(.leading, -7) 
                 }
                 .background(Color.white)
                 .cornerRadius(8)
